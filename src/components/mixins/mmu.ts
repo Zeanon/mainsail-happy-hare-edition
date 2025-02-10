@@ -1,7 +1,18 @@
 import Vue from 'vue'
 import Component from 'vue-class-component'
 
-@Component
+interface MmuGateDetails {
+    gate: number
+    status: number
+    filamentName: string
+    material: string
+    color: string
+    temperature: number
+    spoolId: number
+    speedOverride: number
+}
+
+@Component({ })
 export default class MmuMixin extends Vue {
 
     get hasMmu(): boolean {
@@ -52,16 +63,29 @@ export default class MmuMixin extends Vue {
         return this.$store.state.printer.mmu?.num_gates ?? 0
     }
 
-    get isPaused(): boolean {
+    get printState(): string {
+        return this.$store.state.printer.mmu?.print_state
+    }
+
+    get isPrinting(): boolean {
+        return ["started", "printing"].includes(this.$store.state.printer.mmu?.print_state)
+    }
+
+    get isInPrint(): boolean {
+        return ["printing", "pause_locked", "paused"].includes(this.$store.state.printer.mmu?.print_state)
+    }
+
+    get isMmuPaused(): boolean {
         return this.$store.state.printer.mmu?.is_paused ?? false
+        return ["pause_locked", "paused"].includes(this.$store.state.printer.mmu?.print_state)
+    }
+
+    get isMmuPausedAndLocked(): boolean {
+        return ["pause_locked"].includes(this.$store.state.printer.mmu?.print_state)
     }
 
     get isHomed(): boolean {
         return this.$store.state.printer.mmu?.is_homed ?? false
-    }
-
-    get isInPrint(): boolean {
-        return this.$store.state.printer.mmu?.is_in_print
     }
 
     get gate(): number {
@@ -172,6 +196,65 @@ export default class MmuMixin extends Vue {
         return this.$store.state.printer.mmu?.gate_speed_override
     }
 
+    get gateMap(): MmuGateDetails[] {
+        if (!this.gateStatus) return []
+        return this.gateStatus.map((status, index) => {
+            return {
+                index: index,
+                status: status,
+                filamentName: this.gateFilamentName[index],
+                material: this.gateMaterial[index],
+                color: this.gateColor[index],
+                temperature: this.gateTemperature[index],
+                spoolId: this.gateSpoolId[index],
+                speedOverride: this.gateSpeedOverride[index]
+            }
+        })
+    }
+
+    private gateDetails(gateIndex: number): MmuGateDetails {
+        let gd: MmuGateDetails = {}
+        if (gateIndex === this.TOOL_GATE_BYPASS) {
+            gd.index = -2
+            gd.gateName = 'Bypass'
+            gd.status = -1
+            if (this.gate === gateIndex) {
+                gd.filamentName = this.$store.state.server.spoolman?.active_spool?.filament?.name ?? 'No active spool'
+                gd.material = this.$store.state.server.spoolman?.active_spool?.filament?.material ?? 'Unknown'
+                gd.color = this.formColorString(this.$store.state.server.spoolman?.active_spool?.filament.color_hex ?? null)
+                gd.temperature = this.$store.state.server.spoolman?.active_spool?.filament?.settings_extruder_temp ?? -1
+                gd.spoolId = this.$store.state.server.spoolman?.active_spool?.id ?? -1
+            } else {
+                gd.filamentName = 'Unknown'
+                gd.material = 'Unknown'
+                gd.color = this.formColorString(null)
+                gd.temperature = -1
+                gd.spoolId = -1
+            }
+            gd.speedOverride = 100
+        } else {
+            gd.index = gateIndex
+            gd.gateName = gateIndex === -1 ? '?' : 'Gate: ' + gateIndex
+            gd.status = this.$store.state.printer.mmu?.gate_status?.[gateIndex] ?? -1
+            gd.filamentName = this.$store.state.printer.mmu?.gate_filament_name?.[gateIndex] || 'Unknown'
+            gd.material = this.$store.state.printer.mmu?.gate_material?.[gateIndex] || 'Unknown'
+            gd.color = this.formColorString(this.$store.state.printer.mmu?.gate_color[gateIndex] ?? '')
+            gd.temperature = this.$store.state.printer.mmu?.gate_temperature?.[gateIndex] ?? -1
+            gd.spoolId = this.$store.state.printer.mmu?.gate_spool_id?.[gateIndex] ?? -1
+            gd.speedOverride = this.$store.state.printer.mmu?.gate_speed_override?.[gateIndex] ?? 100
+        }
+        return gd
+    }
+
+    private spoolmanSpool(spoolId: number) {
+        const activeSpool = this.$store.state.server.spoolman.active_spool ?? null
+        if (activeSpool?.id === spoolId) {
+            return activeSpool
+        }
+        const spools = this.$store.state.server.spoolman?.spools ?? []
+        return spools.find((spool) => spool.id === spoolId) ?? null
+    }
+
     //return this.$store.state.printer.mmu?.gate_color_rgb
     //return this.$store.state.printer.mmu?.slicer_color_rgb
     //return this.$store.state.printer.mmu?.tool_extrusion_multipliers
@@ -209,16 +292,12 @@ export default class MmuMixin extends Vue {
         return this.$store.state.printer.mmu?.sync_feedback_enabled
     }
 
-    get printState(): string {
-        return this.$store.state.printer.mmu?.print_state
-    }
-
     get clogDetectionEnabled(): boolean {
-        return this.$store.state.printer.mmu?.clog_detection
+        return this.$store.state.printer.mmu?.clog_detection // PAUL TODO change to clog_detection_enabled (HH update)
     }
 
     get endlessSpoolEnabled(): boolean {
-        return this.$store.state.printer.mmu?.endless_spool
+        return this.$store.state.printer.mmu?.endless_spool // PAUL TODO change to endless_spool_enabled (HH update)
     }
 
     get reasonForPause(): string {
@@ -230,10 +309,8 @@ export default class MmuMixin extends Vue {
     }
 
     get spoolmanSupport(): string {
-        return this.$store.state.printer.mmu?.spoolman_support
+        return this.$store.state.printer.mmu?.spoolman_support ?? 'off'
     }
-
-    //return this.$store.state.printer.mmu?.selector_type
 
     get sensors(): object[] {
         return this.$store.state.printer.mmu?.sensors ?? []
@@ -245,89 +322,22 @@ export default class MmuMixin extends Vue {
 
 
     /*
-     * Convenience access to current gate info in the gate map. If bypass is
-     * selected then try to get info from active spoolman spool
-     */
-
-    get currentGateStatus(): number {
-        return this.$store.state.printer.mmu?.gate_status?.[this.gate] ?? -1
-    }
-
-    get currentGateFilamentName(): string {
-        if (this.gate === this.TOOL_GATE_BYPASS) {
-            // Assume active spoolman spool if available
-            return this.$store.state.server.spoolman?.active_spool?.filament?.name ?? 'Unknown'
-        }
-        return this.$store.state.printer.mmu?.gate_filament_name?.[this.gate] || 'Unknown'
-    }
-
-    get currentGateMaterial(): string {
-        if (this.gate === this.TOOL_GATE_BYPASS) {
-            // Assume active spoolman spool if available
-            return this.$store.state.server.spoolman?.active_spool?.filament?.material ?? 'Unknown'
-        }
-        return this.$store.state.printer.mmu?.gate_material?.[this.gate] || 'Unknown'
-    }
-
-    get currentGateColor(): string {
-        let color = null
-        if (this.gate === this.TOOL_GATE_BYPASS) {
-            // Assume active spoolman spool if available
-            color = this.$store.state.server.spoolman?.active_spool?.filament.color_hex ?? null
-            if (color !== null) '#' + color
-        } else {
-            color = this.$store.state.printer.mmu?.gate_color[this.gate] || '#808080E0'
-        }
-        return this.formColorString(color)
-    }
-
-    get currentGateTemperature(): number {
-        if (this.gate === this.TOOL_GATE_BYPASS) {
-            // Assume active spoolman spool if available
-            return this.$store.state.server.spoolman?.active_spool?.filament?.settings_extruder_temp ?? -1
-        }
-        return this.$store.state.printer.mmu?.gate_temperature?.[this.gate] ?? -1
-
-    }
-
-    get currentGateVendor(): string { // Happy Hare doesn't store vendor
-        if (this.gate === this.TOOL_GATE_BYPASS) {
-            // Assume active spoolman spool if available
-            return this.$store.state.server.spoolman?.active_spool?.filament?.vendor?.name ?? 'Unknown'
-        }
-        return this.spoolmanSpool?.filament?.vendor?.name ?? 'Unknown'
-    }
-
-    get currentGateSpoolId(): number {
-        if (this.gate === this.TOOL_GATE_BYPASS) {
-            // Assume active spoolman spool if available
-            return this.$store.state.server.spoolman?.active_spool?.id ?? -1
-        }
-        return this.$store.state.printer.mmu?.gate_spool_id?.[this.gate] ?? -1
-    }
-
-    get currentGateSpeedOverride(): number {
-        return this.$store.state.printer.mmu?.gate_speed_override?.[this.gate] ?? 100
-    }
-
-
-    /*
      * Selective Happy Hare configuration parameters
      */
 
     get configGateHomingEndstop(): string {
-        // TODO make dynamic because of MMU_TEST_CONFIG
+        // TODO ideally make dynamic because of MMU_TEST_CONFIG
         return this.$store.state.printer.configfile.config.mmu?.gate_homing_endstop
     }
 
     get configExtruderHomingEndstop(): string {
-        // TODO make dynamic because of MMU_TEST_CONFIG
+        // TODO ideally make dynamic because of MMU_TEST_CONFIG
         return this.$store.state.printer.configfile.config.mmu?.extruder_homing_endstop
     }
 
-    get configExtruderForceHoming(): string {
-        // TODO make dynamic because of MMU_TEST_CONFIG
-        return this.$store.state.printer.configfile.config.mmu?.extruder_force_homing
+    get configExtruderForceHoming(): boolean {
+        // TODO ideally make dynamic because of MMU_TEST_CONFIG
+        return (this.$store.state.printer.configfile.config.mmu?.extruder_force_homing ?? 0) === 1
     }
 
     get varsCalibrationBowdenLengths(): number[] {
@@ -339,7 +349,9 @@ export default class MmuMixin extends Vue {
     }
 
     get varsFilamentRemainingColor(): string {
-        return this.formColorString(this.$store.state.printer.save_variables?.variables?.mmu_state_filament_remaining_color ?? '')
+        let color = this.$store.state.printer.save_variables?.variables?.mmu_state_filament_remaining_color ?? ''
+        if (color) return this.formColorString(color)
+        return color
     }
 
 
@@ -347,38 +359,25 @@ export default class MmuMixin extends Vue {
      * Miscellaneous
      */
 
-    get gateText(): string {
-        if (this.gate === -1) {
-            return "?"
-        } else if (this.gate === -2) {
-            return "Bypass"
-        } else {
-            return this.gate
-        }
+    gateText(gate): string {
+        return gate === -1 ? "?" : gate === this.TOOL_GATE_BYPASS ? "Bypass" : "@" + gate
     }
 
-    get toolText(): string {
-        if (this.tool === -1) {
-            return "T?"
-        } else if (this.tool === -2) {
-            return "Bypass"
-        } else {
-            return "T" + this.tool
-        }
+    toolText(tool): string {
+        return tool === -1 ? "T?" : tool === this.TOOL_GATE_BYPASS ? "Bypass" : "T" + tool
+    }
+
+    // Empty string if nothing to report
+    get toolchangeText(): string {
+        if (this.nextTool === this.TOOL_GATE_UNKNOWN) return "";
+        const fromText = this.lastTool !== this.TOOL_GATE_UNKNOWN ?
+            ` from ${this.lastTool === this.TOOL_GATE_BYPASS ? "Bypass" : `T${this.lastTool}`}` : "";
+        const toText = ` to ${this.nextTool === this.TOOL_GATE_BYPASS ? "Bypass" : `T${this.nextTool}`}`;
+        return `Changing tool${fromText}${toText}`;
     }
 
     refreshSpoolmanData() {     
         this.$store.dispatch('server/spoolman/refreshSpools')
-    }
-
-    // Prefer active if its the correct one (updated more frequently)
-    get spoolmanSpool() {
-        const activeSpool = this.$store.state.server.spoolman.active_spool ?? null
-        if (activeSpool?.id === this.gate) {
-            return activeSpool
-        }
-        const spools = this.$store.state.server.spoolman?.spools ?? []
-        return spools.find((spool) => spool.id === this.currentGateSpoolId) ?? null
     }
 
     async doLoadingSend(gcode: string, loadingKey: string) {
@@ -391,6 +390,11 @@ export default class MmuMixin extends Vue {
     doSend(gcode: string) {
         this.$store.dispatch('server/addEvent', { message: gcode, type: 'command' })
         this.$socket.emit('printer.gcode.script', { script: gcode })
+    }
+
+    get canSend(): boolean {
+        const idleTimeout = this.$store.state.printer.idle_timeout?.state
+        return this.klipperReadyForGui && !['printing'].includes(this.printer_state) && !['Printing'].includes(idleTimeout)
     }
 
 
@@ -420,8 +424,6 @@ export default class MmuMixin extends Vue {
 
 /* PAUL TEMP
    PAUL note to change in Extruder panel..
-   PAUL and USEFUL CODE SNIPPITS
-
    Remember:  || <val> if default should apply to 0 or "", ?? <val> if default only for undefined, etc
 
     get toolsWithSpoolId() {
@@ -434,6 +436,7 @@ export default class MmuMixin extends Vue {
             })
     }
 
+    // Reference for grabbing colors from currentTheme .. need to update hard coded values
     get warningColor(): string {
         return this.$vuetify?.theme?.currentTheme?.warning?.toString() ?? '#ff8300'
     }
@@ -450,26 +453,6 @@ export default class MmuMixin extends Vue {
         }
 
         return '#ffffff'
-    }
-
-    // For walking store to find property
-    private findKey(obj: any, keyToFind: string): boolean {
-        // Check if the current object has the key
-        if (obj.hasOwnProperty(keyToFind)) {
-            return true;
-        }
-
-        // Otherwise, iterate over all properties of the object
-        for (let key in obj) {
-            if (obj[key] && typeof obj[key] === 'object') {
-                // Recursively search in each nested object
-                if (this.findKey(obj[key], keyToFind)) {
-                    console.log("-->" + key)
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 */
 }

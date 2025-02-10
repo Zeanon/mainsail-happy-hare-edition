@@ -735,24 +735,34 @@
         "MmuPanel": {
             "Headline": "Mmu",
             "RecoverFilamentPosition": "Recover Filament Position",
-            "CheckAllGates": "Check All Gates",
             "EditTtgMap": "Map Tools",
             "RecoverState": "Fix MMU State",
             "EditGateMap": "Edit Gate Info",
             "MmuMaintenance": "MMU Maintenance",
-            "PrintStats": "Print Stats",
             "ShowClogDetection": "Clog Detection",
             "ShowTtgMap": "TTG Map",
             "ShowDetails": "Filament Details",
+            "LargeFilamentStatus": "Large Filament Status",
             "CommingSoon": "Comming Soon...",
             "Cancel": "Cancel",
             "Ok": "Ok",
+            "Unknown": "Unknown",
+            "NoSpoolId": "No spool ID",
+            "NoActiveSpool": "No active spool",
+            "ClogDetection": "Clog Detection",
+            "ToolMapping": "Tool Mapping",
             "ButtonEject": "Eject",
             "ButtonPreload": "Preload",
             "ButtonCheckGate": "Check Gate",
+            "ButtonCheckAllGates": "Check All Gates",
+            "ButtonRecover": "Recover",
             "ButtonUnlock": "Unlock",
             "ButtonLoad": "Load",
-            "ButtonUnload": "Unload"
+            "ButtonLoadExt": "Load Ext",
+            "ButtonUnload": "Unload",
+            "ButtonUnloadExt": "Unload Ext",
+            "ButtonPrintStats": "Print Stats",
+            "ButtonSyncSpoolman": "Sync Spoolman"
         },
         "StatusPanel": {
             "CancelPrint": "Cancel print",
@@ -1408,6 +1418,20 @@
         "Used": "Used",
         "Variable": "Variable",
         "Video": "Video"
+    },
+    "MmuDialog": {
+        "MmuRecover": {
+            "Intro": "This is a low level recovery for use when Happy Hare is out of sync with your MMU. It is recommended to try automatic recovery first however this will be required to correct the current tool or gate (Alternatively on Type-A MMU's you can unload and home the selector).",
+            "SetTool": "Set to the current tool",
+            "SetGate": "Set to the current gate",
+            "FilamentLoaded": "Is the filament completely loaded to the extruder or completely unloaded?" ,
+            "NoTool": "A tool must be selected",
+            "GateBypass": "Gate is set to Bypass!",
+            "NoGate": "A gate must be selected",
+            "ToolBypass": "Tool is set to Bypass!",
+            "RemapWarningPrefix": "This will remap gate to",
+            "NoPosition": "Select current filament position"
+        }
     },
     "title": "English"
 }
