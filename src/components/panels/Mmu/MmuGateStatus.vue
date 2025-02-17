@@ -64,7 +64,8 @@ export default class MmuGateStatus extends Mixins(BaseMixin, MmuMixin) {
 .selected-text {
     fill: #000000;
 }
+
 .regular-text {
-    fill: #808080;
+    fill: #C0C0C0;
 }
 </style>

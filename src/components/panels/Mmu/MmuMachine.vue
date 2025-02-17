@@ -2,7 +2,7 @@
   <v-container>
     <v-row dense>
         <v-col v-for="index in unitArray" cols="auto" :key="'unit_' + index">
-          <div class="mmu_unit">
+          <div class="mmu_unit secondary">
             <mmu-unit :unit="index"
                       :editGateMap="editGateMap"
                       :editGateSelected="editGateSelected"
@@ -39,6 +39,5 @@ export default class MmuMachine extends Mixins(BaseMixin, MmuMixin) {
 <style scoped>
 .mmu_unit {
     border-radius: 10px;
-    background: var(--v-secondary-darken1, #272727);
 }
 </style>

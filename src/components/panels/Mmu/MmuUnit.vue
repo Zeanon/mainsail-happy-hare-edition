@@ -1,6 +1,6 @@
 <template>
   <v-container>
-    <div class="spool-row text--disabled">{{ unitName }}</div>
+    <div class="spool-row">{{ unitName }}</div>
       <div class="spool-row">
 
         <div v-for="gate in unitGateRange"
@@ -134,7 +134,7 @@ export default class MmuUnit extends Mixins(BaseMixin, MmuMixin) {
     align-items: center;
     justify-content: flex-start;
     gap: 0px;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .gate-status {

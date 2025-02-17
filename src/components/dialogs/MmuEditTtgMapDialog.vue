@@ -269,7 +269,7 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
     private toolCardClass(tool: number): string[] {
         let classes = []
         classes.push('no-padding')
-        classes.push('tool-card')
+        classes.push('secondary')
         if (this.selectedTool === tool) classes.push('selected-card')
         if (this.selectedTool !== tool && this.selectedTool >= 0) classes.push('disabled-card')
         return classes
@@ -466,10 +466,6 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
 
 .disabled-card {
     opacity: 0.5;
-}
-
-.tool-card {
-    background-color: #2C2C2C;
 }
 
 .small-font {
