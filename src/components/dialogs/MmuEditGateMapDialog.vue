@@ -57,7 +57,7 @@
                         <v-container v-if="editGateSelected !== -1">
 
                             <v-row class="ms-0 me-0 mb-4">
-                                <v-col class="d-flex justify-start align-center no-padding ps-4 pe-4 small-font secondary">
+                                <v-col class="d-flex justify-start align-center no-padding small-font text--secondary">
                                 <div v-if="spoolmanSupport === SPOOLMAN_PULL">{{ $t('Panels.MmuPanel.GateMapDialog.SpoolmanPull', {'mode': spoolmanSupport}) }}</div>
                                 <div v-else-if="spoolmanSupport === SPOOLMAN_OFF">{{ $t('Panels.MmuPanel.GateMapDialog.SpoolmanOff', {'mode': spoolmanSupport}) }}</div>
                                 <div v-else>{{ $t('Panels.MmuPanel.GateMapDialog.SpoolmanOther', {'mode': spoolmanSupport}) }}</div>
@@ -66,7 +66,7 @@
 
                             <!-- GATE DETAILS-->
                             <v-row>
-                                <v-col cols="6" class="d-flex flex-column justify-start align-left no-padding pt-3">
+                                <v-col cols="12" md="6" class="d-flex flex-column justify-start align-left no-padding pt-3">
 
                                     <v-row>
                                         <v-col cols="6" class="pt-5 ps-6">
@@ -81,6 +81,7 @@
                                                           :label="$t('Panels.MmuPanel.GateMapDialog.SpoolmanId')"
                                                           :rules="spoolIdRules()"
                                                           :disabled="!useSpoolman || spoolmanSupport === SPOOLMAN_PULL || spoolmanSupport === SPOOLMAN_OFF"
+                                                          :hide-spin-buttons="!useSpoolman || spoolmanSupport === SPOOLMAN_PULL || spoolmanSupport === SPOOLMAN_OFF"
                                                           @blur="adjustSpoolId"
                                                           outlined dense>
                                             </v-text-field>
@@ -107,12 +108,14 @@
                                                 @blur="adjustMaterial"
                                                 outlined dense clearable hide-details/>
                                         </v-col>
-                                        <v-col cols="6">
+                                        <v-col cols="2"></v-col>
+                                        <v-col cols="4">
                                             <v-text-field
                                                 v-model="editGateMap[editGateSelected].temperature"
                                                 type="number"
                                                 :label="$t('Panels.MmuPanel.GateMapDialog.Temperature')"
                                                 :disabled="useSpoolman || spoolmanSupport === SPOOLMAN_PULL"
+                                                :hide-spin-buttons="useSpoolman || spoolmanSupport === SPOOLMAN_PULL"
                                                 suffix="°C"
                                                 :rules="temperatureRules"
                                                 @blur="adjustTemperature"
@@ -168,13 +171,13 @@
                                     <v-row>
                                         <v-spacer/>
                                     </v-row>
-
                                 </v-col>
-                                <v-col cols="6" class="d-flex justify-center">
+
+                                <v-col cols="12" md="6" class="d-flex justify-center">
                                     <div v-if="!useSpoolman">
                                         <v-color-picker v-model="editGateMap[editGateSelected].color"
                                                         hide-inputs swatches-max-height="120px" show-swatches
-                                                        mode="hexa" show-alpha/>
+                                                        mode="hexa" show-alpha hide-opacity="false"/>
                                     </div>
                                     <div v-else :class="!spoolIdExists ? 'no-spool' : ''">
                                         <spool-icon height="120px" width="100%"
@@ -186,6 +189,7 @@
                                         </div>
                                     </div>
                                 </v-col>
+
                             </v-row>
                         </v-container>
                     </transition>
@@ -354,8 +358,7 @@ export default class MmuEditGateMapDialog extends Mixins(BaseMixin, MmuMixin) {
             const spool = this.spoolmanSpool(newSpoolId)
             this.editGateMap[this.editGateSelected].filamentName = spool?.filament?.name ?? this.$t('Panels.MmuPanel.Unknown')
             this.editGateMap[this.editGateSelected].material = spool?.filament?.material ?? this.$t('Panels.MmuPanel.Unknown')
-            let color = spool?.filament?.color_hex ?? this.NO_FILAMENT_COLOR
-            if (!color.startsWith('#')) color = "#" + color
+            let color = this.formColorString(spool?.filament?.color_hex)
             this.editGateMap[this.editGateSelected].color = color
             this.editGateMap[this.editGateSelected].temperature = spool?.filament?.settings_extruder_temp ?? -1
         }
@@ -522,7 +525,7 @@ export default class MmuEditGateMapDialog extends Mixins(BaseMixin, MmuMixin) {
 }
 
 .fixed-area {
-    height: 420px;
+    min-height: 420px;
     position: relative;
 }
 
@@ -555,8 +558,8 @@ export default class MmuEditGateMapDialog extends Mixins(BaseMixin, MmuMixin) {
 }               
                     
 ._slider-input {
-    min-width: 4.2rem;
-    max-width: 5rem;
+    min-width: 5.2rem;
+    max-width: 5.2rem;
     margin-left: 12px;
 }
 
