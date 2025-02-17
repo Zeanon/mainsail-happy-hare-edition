@@ -34,19 +34,22 @@
         <use href="#oval" style="filter:url(#blur_wheel2)" :fill="spoolWheelColor"/>
         <use href="#oval" transform="scale(0.41)" style="fill:#111111"/>
     </g>
-    <text v-if="showPercent && filamentAmount > 0"
-          x="152" y="270" text-anchor="middle"
-          font-weight="bold" font-size="56px" :fill="contrastColor">
-        {{ filamentAmount }}%
-    </text>
-    <text v-else-if="!showPercent && filamentAmount === 0"
-          x="140" y="310" text-anchor="middle"
-          font-weight="bold" font-size="160px"
-          style="fill: red; stroke: #111111; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;">!</text>
-    <use v-if="espoolerActive === 'rewind' && gateIndex === gate"
-         href="#espool" transform="translate(225,0) rotate(90) scale(2,2)"/>
-    <use v-if="espoolerActive === 'assist' && gateIndex === gate"
-         href="#espool" transform="translate(225,500) rotate(270) scale(2,-2)"/>
+
+    <g v-if="!editGateMap">
+        <text v-if="showPercent && filamentAmount > 0"
+              x="152" y="270" text-anchor="middle"
+              font-weight="bold" font-size="56px" :fill="contrastColor">
+            {{ filamentAmount }}%
+        </text>
+        <text v-else-if="!showPercent && filamentAmount === 0"
+              x="140" y="310" text-anchor="middle"
+              font-weight="bold" font-size="160px"
+              style="fill: red; stroke: #111111; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;">!</text>
+        <use v-if="espoolerActive === 'rewind' && gateIndex === gate"
+             href="#espool" transform="translate(225,0) rotate(90) scale(2,2)"/>
+        <use v-if="espoolerActive === 'assist' && gateIndex === gate"
+             href="#espool" transform="translate(225,500) rotate(270) scale(2,-2)"/>
+    </g>
 </svg>
 </template>
 
@@ -63,14 +66,18 @@ export default class MmuSpool extends Mixins(BaseMixin, MmuMixin) {
     @Prop({ required: true, default: -1 }) declare readonly gateIndex!: number
     @Prop({ required: false, default: "#AD8762" }) readonly spoolWheelColor: string
     @Prop({ required: false, default: true }) readonly showPercent: boolean
+    @Prop({ required: false, default: null }) readonly editGateMap!: MmuGateDetails[] | null
+    @Prop({ required: false, default: -1 }) readonly editGateSelected!: number
 
     contrastColor: string = "black"
 
     get details(): MmuGateDetails {
+        if (this.editGateMap) return this.editGateMap[this.gateIndex]
         return this.gateDetails(this.gateIndex)
     }
 
     get filamentAmount(): number {
+        if (this.editGateMap) return 100
         if (this.details.status === this.GATE_EMPTY) return 0
 
         const spoolmanSpool = this.spoolmanSpool(this.details.spoolId)
@@ -95,7 +102,7 @@ export default class MmuSpool extends Mixins(BaseMixin, MmuMixin) {
     }
 
     computedScale(start, end) {
-        if (this.filamentAmount < 0) return end
+        if (this.editGateMap || this.filamentAmount < 0) return end
         return start + (end - start) * (this.filamentAmount / 100)
     }
 

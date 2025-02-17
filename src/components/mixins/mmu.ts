@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Component from 'vue-class-component'
 
 interface MmuGateDetails {
-    gate: number
+    index: number
     status: number
     filamentName: string
     material: string
@@ -261,19 +261,7 @@ export default class MmuMixin extends Vue {
     }
 
     get gateMap(): MmuGateDetails[] {
-        return this.gateStatus.map((status, index) => {
-            return {
-                index: index,
-                status: status,
-                filamentName: this.gateFilamentName[index],
-                material: this.gateMaterial[index],
-                color: this.gateColor[index],
-                temperature: this.gateTemperature[index],
-                spoolId: this.gateSpoolId[index],
-                speedOverride: this.gateSpeedOverride[index],
-                endlessSpoolGroup: this.endlessSpoolGroups[index]
-            }
-        })
+        return this.gateStatus.map((_, index) => this.gateDetails(index))
     }
 
     private gateDetails(gateIndex: number): MmuGateDetails {
@@ -299,7 +287,6 @@ export default class MmuMixin extends Vue {
             gd.endlessSpoolGroup = null
         } else {
             gd.index = gateIndex
-            gd.gateName = gateIndex === -1 ? '?' : 'Gate: ' + gateIndex
             gd.status = this.$store.state.printer.mmu?.gate_status?.[gateIndex] ?? -1
             gd.filamentName = this.$store.state.printer.mmu?.gate_filament_name?.[gateIndex] || 'Unknown'
             gd.material = this.$store.state.printer.mmu?.gate_material?.[gateIndex] || 'Unknown'
@@ -413,11 +400,11 @@ export default class MmuMixin extends Vue {
     }
 
     get clogDetectionEnabled(): boolean {
-        return this.$store.state.printer.mmu?.clog_detection // PAUL TODO change to clog_detection_enabled (HH update)
+        return this.$store.state.printer.mmu?.clog_detection_enabled
     }
 
     get endlessSpoolEnabled(): boolean {
-        return this.$store.state.printer.mmu?.endless_spool // PAUL TODO change to endless_spool_enabled (HH update)
+        return this.$store.state.printer.mmu?.endless_spool_enabled
     }
 
     get reasonForPause(): string {
@@ -431,6 +418,10 @@ export default class MmuMixin extends Vue {
     get spoolmanSupport(): string {
         return this.$store.state.printer.mmu?.spoolman_support ?? 'off'
     }
+    readonly SPOOLMAN_OFF: string      = 'off'      // Spoolman disabled
+    readonly SPOOLMAN_READONLY: string = 'readonly' // Get filament attributes only
+    readonly SPOOLMAN_PUSH: string     = 'push'     // Local gatemap is the source or truth
+    readonly SPOOLMAN_PULL: string     = 'pull'     // Spoolman db is the source of truth
 
     get sensors(): object[] {
         return this.$store.state.printer.mmu?.sensors ?? []
@@ -523,23 +514,26 @@ export default class MmuMixin extends Vue {
      */
 
     // Fix Happy Hare color strings (# problematic in klipper CLI)
+    readonly NO_FILAMENT_COLOR ="#808182E3"
     private formColorString(color: string): string {
-        if (!color) {
-            return "#808080E0"
-        }
+        let hexaColor = this.NO_FILAMENT_COLOR
+        if (!color) return hexaColor
 
         // Check if the color is a named color
         const namedColor = W3C_COLORS.find(c => c.name === color.toLowerCase())
         if (namedColor) {
-            return namedColor.hex
+            hexaColor = namedColor.hex
+        } else {
+            // Validate and format hex color codes
+            const hexColorPattern = /^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/
+            if (hexColorPattern.test(color) && !color.startsWith('#')) {
+                hexaColor = '#' + color
+            }
         }
-
-        // Validate and format hex color codes
-        const hexColorPattern = /^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/
-        if (hexColorPattern.test(color) && !color.startsWith('#')) {
-            return '#' + color
+        if (hexaColor.length < 8) {
+            hexaColor = hexaColor + 'FF'
         }
-        return color
+        return hexaColor.toUpperCase()
     }
 
     private getLuminance({ r, g, b }) {

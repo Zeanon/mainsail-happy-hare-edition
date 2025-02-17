@@ -1,4 +1,5 @@
 <template>
+  <div>
     <v-dialog v-model="showDialog" width="800" persistent :fullscreen="isMobile">
         <panel :title="$t('Panels.MmuPanel.EditTtgMap')"
                :icon="mdiStateMachine"
@@ -65,7 +66,7 @@
                                          :selectedGate="selectedGate"/>
                             <v-btn small color="secondary" class="small-font"
                                    :loading="loadings.includes('mmu_ttg_map')"
-                                   @click="reset()">
+                                   @click="resetTtgMap()">
                                 {{ $t('Panels.MmuPanel.TtgMapDialog.Reset') }}
                             </v-btn>
                         </v-col>
@@ -172,6 +173,16 @@
             </v-card-actions>
         </panel>
     </v-dialog>
+
+    <!-- CONFIRMATION FOR RESET ACTION -->
+    <confirmation-dialog :show="showConfirmationDialog"
+                         :title="$t('Panels.MmuPanel.Dialog.AreYouSure')"
+                         :text="$t('Panels.MmuPanel.TtgMapDialog.ResetConfirmation')"
+                         :action-button-text="$t('Panels.MmuPanel.TtgMapDialog.Reset')"
+                         :cancel-button-text="$t('Panels.MmuPanel.Cancel')"
+                         @action="executeResetTtgMap"
+                         @close="showConfirmationDialog = false"/>
+  </div>
 </template>
 
 <script lang="ts">
@@ -180,12 +191,13 @@ import { Mixins, Prop, Watch } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import MmuMixin from '@/components/mixins/mmu'
 import Panel from '@/components/ui/Panel.vue'
-import { set } from 'vue'
+import Vue from 'vue'
 import { FileStateGcodefile } from '@/store/files/types'
+import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
 import { mdiCloseThick, mdiStateMachine } from '@mdi/js'
 
 @Component({
-    components: { Panel }
+    components: { Panel, ConfirmationDialog }
 })
 export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
     mdiCloseThick = mdiCloseThick
@@ -203,6 +215,8 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
 
     private selectedTool: number = -1
     private selectedGate: number = -1
+
+    private showConfirmationDialog: boolean = false
 
     @Watch('ttgMap')
     onTtgMapChanged(): void {
@@ -316,7 +330,7 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
 
     private selectGate(gate, item) {
         this.selectedGate = gate
-        set(this.localTtgMap, this.selectedTool, gate)
+        Vue.set(this.localTtgMap, this.selectedTool, gate)
     }
 
     private scrollToGateRow(gate) {
@@ -409,9 +423,14 @@ export default class MmuEditTtgMapDialog extends Mixins(BaseMixin, MmuMixin) {
 
     // Actions...
 
-    reset() {  
+    resetTtgMap() {  
+        this.showConfirmationDialog = true
+    }
+
+    executeResetTtgMap() {  
         this.initialize()
         this.doLoadingSend('MMU_TTG_MAP RESET=1', 'mmu_ttg_map')
+        this.showConfirmationDialog = false
     }
 
     close() {
