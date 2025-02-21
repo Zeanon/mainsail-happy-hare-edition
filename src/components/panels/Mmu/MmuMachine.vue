@@ -1,13 +1,16 @@
 <template>
-<v-container>
+  <v-container>
     <v-row dense>
         <v-col v-for="index in unitArray" cols="auto" :key="'unit_' + index">
-          <div class="mmu_unit">
-            <mmu-unit :unit="index"/>
+          <div class="mmu_unit secondary">
+            <mmu-unit :unit="index"
+                      :editGateMap="editGateMap"
+                      :editGateSelected="editGateSelected"
+                      @select-gate="selectGate"/>
           </div>
         </v-col>
     </v-row>
-</v-container>
+  </v-container>
 </template>
 
 <script lang="ts">
@@ -19,9 +22,16 @@ import MmuUnit from '@/components/panels/Mmu/MmuUnit.vue'
 @Component({ })
 export default class MmuMachine extends Mixins(BaseMixin, MmuMixin) {
 
+    @Prop({ required: false, default: null }) readonly editGateMap!: MmuGateDetails[] | null
+    @Prop({ required: false, default: -1 }) readonly editGateSelected!: number
+
     get unitArray(): number[] {
         const numUnits = this.$store.state.printer?.mmu_machine?.num_units || 0
         return Array.from({ length: numUnits }, (_, k) => k)
+    }
+
+    private selectGate(gate: number): null {
+        this.$emit('select-gate', gate)
     }
 }
 </script>
@@ -29,6 +39,5 @@ export default class MmuMachine extends Mixins(BaseMixin, MmuMixin) {
 <style scoped>
 .mmu_unit {
     border-radius: 10px;
-    background: #282828;
 }
 </style>

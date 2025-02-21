@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Component from 'vue-class-component'
 
 interface MmuGateDetails {
-    gate: number
+    index: number
     status: number
     filamentName: string
     material: string
@@ -10,7 +10,67 @@ interface MmuGateDetails {
     temperature: number
     spoolId: number
     speedOverride: number
+    endlessSpoolGroup: number | null
 }
+
+interface SlicerToolDetails {
+    color: string
+    material: string
+    temp: number
+    name: string
+    in_use: boolean
+}
+
+export const W3C_COLORS: { name: string, hex: string }[] = [
+    { name: 'aliceblue', hex: '#F0F8FF' }, { name: 'antiquewhite', hex: '#FAEBD7' }, { name: 'aqua', hex: '#00FFFF' },
+    { name: 'aquamarine', hex: '#7FFFD4' }, { name: 'azure', hex: '#F0FFFF' }, { name: 'beige', hex: '#F5F5DC' },
+    { name: 'bisque', hex: '#FFE4C4' }, { name: 'black', hex: '#000000' }, { name: 'blanchedalmond', hex: '#FFEBCD' },
+    { name: 'blue', hex: '#0000FF' }, { name: 'blueviolet', hex: '#8A2BE2' }, { name: 'brown', hex: '#A52A2A' },
+    { name: 'burlywood', hex: '#DEB887' }, { name: 'cadetblue', hex: '#5F9EA0' }, { name: 'chartreuse', hex: '#7FFF00' },
+    { name: 'chocolate', hex: '#D2691E' }, { name: 'coral', hex: '#FF7F50' }, { name: 'cornflowerblue', hex: '#6495ED' },
+    { name: 'cornsilk', hex: '#FFF8DC' }, { name: 'crimson', hex: '#DC143C' }, { name: 'cyan', hex: '#00FFFF' },
+    { name: 'darkblue', hex: '#00008B' }, { name: 'darkcyan', hex: '#008B8B' }, { name: 'darkgoldenrod', hex: '#B8860B' },
+    { name: 'darkgray', hex: '#A9A9A9' }, { name: 'darkgreen', hex: '#006400' }, { name: 'darkgrey', hex: '#A9A9A9' },
+    { name: 'darkkhaki', hex: '#BDB76B' }, { name: 'darkmagenta', hex: '#8B008B' }, { name: 'darkolivegreen', hex: '#556B2F' },
+    { name: 'darkorange', hex: '#FF8C00' }, { name: 'darkorchid', hex: '#9932CC' }, { name: 'darkred', hex: '#8B0000' },
+    { name: 'darksalmon', hex: '#E9967A' }, { name: 'darkseagreen', hex: '#8FBC8F' }, { name: 'darkslateblue', hex: '#483D8B' },
+    { name: 'darkslategray', hex: '#2F4F4F' }, { name: 'darkslategrey', hex: '#2F4F4F' }, { name: 'darkturquoise', hex: '#00CED1' },
+    { name: 'darkviolet', hex: '#9400D3' }, { name: 'deeppink', hex: '#FF1493' }, { name: 'deepskyblue', hex: '#00BFFF' },
+    { name: 'dimgray', hex: '#696969' }, { name: 'dimgrey', hex: '#696969' }, { name: 'dodgerblue', hex: '#1E90FF' },
+    { name: 'firebrick', hex: '#B22222' }, { name: 'floralwhite', hex: '#FFFAF0' }, { name: 'forestgreen', hex: '#228B22' },
+    { name: 'fuchsia', hex: '#FF00FF' }, { name: 'gainsboro', hex: '#DCDCDC' }, { name: 'ghostwhite', hex: '#F8F8FF' },
+    { name: 'gold', hex: '#FFD700' }, { name: 'goldenrod', hex: '#DAA520' }, { name: 'gray', hex: '#808080' }, { name: 'green', hex: '#008000' },
+    { name: 'greenyellow', hex: '#ADFF2F' }, { name: 'grey', hex: '#808080' }, { name: 'honeydew', hex: '#F0FFF0' },
+    { name: 'hotpink', hex: '#FF69B4' }, { name: 'indianred', hex: '#CD5C5C' }, { name: 'indigo', hex: '#4B0082' },
+    { name: 'ivory', hex: '#FFFFF0' }, { name: 'khaki', hex: '#F0E68C' }, { name: 'lavender', hex: '#E6E6FA' },
+    { name: 'lavenderblush', hex: '#FFF0F5' }, { name: 'lawngreen', hex: '#7CFC00' }, { name: 'lemonchiffon', hex: '#FFFACD' },
+    { name: 'lightblue', hex: '#ADD8E6' }, { name: 'lightcoral', hex: '#F08080' }, { name: 'lightcyan', hex: '#E0FFFF' },
+    { name: 'lightgoldenrodyellow', hex: '#FAFAD2' }, { name: 'lightgray', hex: '#D3D3D3' }, { name: 'lightgreen', hex: '#90EE90' },
+    { name: 'lightgrey', hex: '#D3D3D3' }, { name: 'lightpink', hex: '#FFB6C1' }, { name: 'lightsalmon', hex: '#FFA07A' },
+    { name: 'lightseagreen', hex: '#20B2AA' }, { name: 'lightskyblue', hex: '#87CEFA' }, { name: 'lightslategray', hex: '#778899' },
+    { name: 'lightslategrey', hex: '#778899' }, { name: 'lightsteelblue', hex: '#B0C4DE' }, { name: 'lightyellow', hex: '#FFFFE0' },
+    { name: 'lime', hex: '#00FF00' }, { name: 'limegreen', hex: '#32CD32' }, { name: 'linen', hex: '#FAF0E6' },
+    { name: 'magenta', hex: '#FF00FF' }, { name: 'maroon', hex: '#800000' }, { name: 'mediumaquamarine', hex: '#66CDAA' },
+    { name: 'mediumblue', hex: '#0000CD' }, { name: 'mediumorchid', hex: '#BA55D3' }, { name: 'mediumpurple', hex: '#9370DB' },
+    { name: 'mediumseagreen', hex: '#3CB371' }, { name: 'mediumslateblue', hex: '#7B68EE' }, { name: 'mediumspringgreen', hex: '#00FA9A' },
+    { name: 'mediumturquoise', hex: '#48D1CC' }, { name: 'mediumvioletred', hex: '#C71585' }, { name: 'midnightblue', hex: '#191970' },
+    { name: 'mintcream', hex: '#F5FFFA' }, { name: 'mistyrose', hex: '#FFE4E1' }, { name: 'moccasin', hex: '#FFE4B5' },
+    { name: 'navajowhite', hex: '#FFDEAD' }, { name: 'navy', hex: '#000080' }, { name: 'oldlace', hex: '#FDF5E6' },
+    { name: 'olive', hex: '#808000' }, { name: 'olivedrab', hex: '#6B8E23' }, { name: 'orange', hex: '#FFA500' },
+    { name: 'orangered', hex: '#FF4500' }, { name: 'orchid', hex: '#DA70D6' }, { name: 'palegoldenrod', hex: '#EEE8AA' },
+    { name: 'palegreen', hex: '#98FB98' }, { name: 'paleturquoise', hex: '#AFEEEE' }, { name: 'palevioletred', hex: '#DB7093' },
+    { name: 'papayawhip', hex: '#FFEFD5' }, { name: 'peachpuff', hex: '#FFDAB9' }, { name: 'peru', hex: '#CD853F' },
+    { name: 'pink', hex: '#FFC0CB' }, { name: 'plum', hex: '#DDA0DD' }, { name: 'powderblue', hex: '#B0E0E6' }, { name: 'purple', hex: '#800080' },
+    { name: 'red', hex: '#FF0000' }, { name: 'rosybrown', hex: '#BC8F8F' }, { name: 'royalblue', hex: '#4169E1' },
+    { name: 'saddlebrown', hex: '#8B4513' }, { name: 'salmon', hex: '#FA8072' }, { name: 'sandybrown', hex: '#F4A460' },
+    { name: 'seagreen', hex: '#2E8B57' }, { name: 'seashell', hex: '#FFF5EE' }, { name: 'sienna', hex: '#A0522D' },
+    { name: 'silver', hex: '#C0C0C0' }, { name: 'skyblue', hex: '#87CEEB' }, { name: 'slateblue', hex: '#6A5ACD' },
+    { name: 'slategray', hex: '#708090' }, { name: 'slategrey', hex: '#708090' }, { name: 'snow', hex: '#FFFAFA' },
+    { name: 'springgreen', hex: '#00FF7F' }, { name: 'steelblue', hex: '#4682B4' }, { name: 'tan', hex: '#D2B48C' },
+    { name: 'teal', hex: '#008080' }, { name: 'thistle', hex: '#D8BFD8' }, { name: 'tomato', hex: '#FF6347' },
+    { name: 'turquoise', hex: '#40E0D0' }, { name: 'violet', hex: '#EE82EE' }, { name: 'wheat', hex: '#F5DEB3' },
+    { name: 'white', hex: '#FFFFFF' }, { name: 'whitesmoke', hex: '#F5F5F5' }, { name: 'yellow', hex: '#FFFF00' },
+    { name: 'yellowgreen', hex: '#9ACD32' }]
 
 @Component({ })
 export default class MmuMixin extends Vue {
@@ -99,6 +159,10 @@ export default class MmuMixin extends Vue {
 
     get activeFilament(): object[] {
         return this.$store.state.printer.mmu?.active_filament
+    }
+
+    get numToolchanges(): number {
+        return this.$store.state.printer.mmu?.num_toolchanges
     }
 
     get lastTool(): number {
@@ -197,19 +261,7 @@ export default class MmuMixin extends Vue {
     }
 
     get gateMap(): MmuGateDetails[] {
-        if (!this.gateStatus) return []
-        return this.gateStatus.map((status, index) => {
-            return {
-                index: index,
-                status: status,
-                filamentName: this.gateFilamentName[index],
-                material: this.gateMaterial[index],
-                color: this.gateColor[index],
-                temperature: this.gateTemperature[index],
-                spoolId: this.gateSpoolId[index],
-                speedOverride: this.gateSpeedOverride[index]
-            }
-        })
+        return this.gateStatus.map((_, index) => this.gateDetails(index))
     }
 
     private gateDetails(gateIndex: number): MmuGateDetails {
@@ -232,9 +284,9 @@ export default class MmuMixin extends Vue {
                 gd.spoolId = -1
             }
             gd.speedOverride = 100
+            gd.endlessSpoolGroup = null
         } else {
             gd.index = gateIndex
-            gd.gateName = gateIndex === -1 ? '?' : 'Gate: ' + gateIndex
             gd.status = this.$store.state.printer.mmu?.gate_status?.[gateIndex] ?? -1
             gd.filamentName = this.$store.state.printer.mmu?.gate_filament_name?.[gateIndex] || 'Unknown'
             gd.material = this.$store.state.printer.mmu?.gate_material?.[gateIndex] || 'Unknown'
@@ -242,6 +294,7 @@ export default class MmuMixin extends Vue {
             gd.temperature = this.$store.state.printer.mmu?.gate_temperature?.[gateIndex] ?? -1
             gd.spoolId = this.$store.state.printer.mmu?.gate_spool_id?.[gateIndex] ?? -1
             gd.speedOverride = this.$store.state.printer.mmu?.gate_speed_override?.[gateIndex] ?? 100
+            gd.endlessSpoolGroup = this.$store.state.printer.mmu?.endless_spool_groups?.[gateIndex] ?? gateIndex
         }
         return gd
     }
@@ -259,7 +312,61 @@ export default class MmuMixin extends Vue {
     //return this.$store.state.printer.mmu?.slicer_color_rgb
     //return this.$store.state.printer.mmu?.tool_extrusion_multipliers
     //return this.$store.state.printer.mmu?.tool_speed_multipliers
-    //return this.$store.state.printer.mmu?.slicer_tool_map
+
+    get slicerToolMap(): object {
+        return this.$store.state.printer.mmu?.slicer_tool_map
+    }
+
+    private toolDetails(toolIndex: number, file?: FileStateGcodefile): SlicerToolDetails {
+        let td: SlicerToolDetails = {}
+
+        // Have file so use metadata
+        if (file) {
+            // Different slicers use extruder/filament colors differently
+            let c1, c2
+            switch (file.slicer) {
+                case 'OrcaSlicer':
+                case 'BambuStudio':
+                    c1 = file.filament_color ?? ""
+                    c2 = file.extruder_color ?? ""
+                    break
+                case 'SuperSlicer':
+                default: // Assume PrusaSlicer
+                    c1 = file.extruder_color ?? ""
+                    c2 = file.filament_color ?? ""
+                    break
+            }
+            let colors = c1.split(/[,;]/).map(element => element.trim())
+            if (colors.every(str => str === "")) {
+                colors = c2.split(/[,;]/).map(element => element.trim())
+            }
+            td.color = this.formColorString(colors[toolIndex])
+
+            let materials = file.filament_type ?? ""
+            materials = materials.split(/[,;]/).map(element => element.trim())
+            td.material = materials[toolIndex] || 'Unknown'
+
+            let temps = file.filament_temp ?? ""
+            temps = temps.split(/[,;]/).map(element => element.trim())
+            td.temp = Number(temps[toolIndex] ?? -1)
+
+            let names = file.filament_name ?? ""
+            names = names.split(/[,;]/).map(element => element.trim())
+            td.name = names[toolIndex] || 'Unknown'
+
+            let referencedTools = file.referenced_tools ?? ""
+            referencedTools = referencedTools.split(/[,;]/).map(element => element.trim())
+            td.inUse = referencedTools?.includes(toolIndex.toString()) ?? false
+
+        } else { // Use Happy Hare's slicer_tool_map
+            td.color = this.formColorString(this.$store.state.printer.mmu?.slicer_tool_map?.tools?.[toolIndex]?.color ?? '')
+            td.material = this.$store.state.printer.mmu?.slicer_tool_map?.tools?.[toolIndex]?.material || 'Unknown'
+            td.temp = this.$store.state.printer.mmu?.slicer_tool_map?.tools?.[toolIndex]?.temp ?? -1
+            td.name = this.$store.state.printer.mmu?.slicer_tool_map?.tools?.[toolIndex]?.name || 'Unknown'
+            td.inUse = this.$store.state.printer.mmu?.slicer_tool_map?.tools?.[toolIndex]?.in_use || false
+        }
+        return td
+    }
 
     get action(): string {
         return this.$store.state.printer.mmu?.action
@@ -293,11 +400,11 @@ export default class MmuMixin extends Vue {
     }
 
     get clogDetectionEnabled(): boolean {
-        return this.$store.state.printer.mmu?.clog_detection // PAUL TODO change to clog_detection_enabled (HH update)
+        return this.$store.state.printer.mmu?.clog_detection_enabled
     }
 
     get endlessSpoolEnabled(): boolean {
-        return this.$store.state.printer.mmu?.endless_spool // PAUL TODO change to endless_spool_enabled (HH update)
+        return this.$store.state.printer.mmu?.endless_spool_enabled
     }
 
     get reasonForPause(): string {
@@ -311,6 +418,10 @@ export default class MmuMixin extends Vue {
     get spoolmanSupport(): string {
         return this.$store.state.printer.mmu?.spoolman_support ?? 'off'
     }
+    readonly SPOOLMAN_OFF: string      = 'off'      // Spoolman disabled
+    readonly SPOOLMAN_READONLY: string = 'readonly' // Get filament attributes only
+    readonly SPOOLMAN_PUSH: string     = 'push'     // Local gatemap is the source or truth
+    readonly SPOOLMAN_PULL: string     = 'pull'     // Spoolman db is the source of truth
 
     get sensors(): object[] {
         return this.$store.state.printer.mmu?.sensors ?? []
@@ -403,15 +514,26 @@ export default class MmuMixin extends Vue {
      */
 
     // Fix Happy Hare color strings (# problematic in klipper CLI)
+    readonly NO_FILAMENT_COLOR ="#808182E3"
     private formColorString(color: string): string {
-        if (!color) {
-            return "#808080E0"
+        let hexaColor = this.NO_FILAMENT_COLOR
+        if (!color) return hexaColor
+
+        // Check if the color is a named color
+        const namedColor = W3C_COLORS.find(c => c.name === color.toLowerCase())
+        if (namedColor) {
+            hexaColor = namedColor.hex
+        } else {
+            // Validate and format hex color codes
+            const hexColorPattern = /^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/
+            if (hexColorPattern.test(color) && !color.startsWith('#')) {
+                hexaColor = '#' + color
+            }
         }
-        const hexColorPattern = /^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/
-        if (hexColorPattern.test(color) && !color.startsWith('#')) {
-            return '#' + color
+        if (hexaColor.length < 8) {
+            hexaColor = hexaColor + 'FF'
         }
-        return color
+        return hexaColor.toUpperCase()
     }
 
     private getLuminance({ r, g, b }) {
@@ -422,7 +544,7 @@ export default class MmuMixin extends Vue {
         return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722
     } 
 
-/* PAUL TEMP
+/* PAUL vvv TEMP
    PAUL note to change in Extruder panel..
    Remember:  || <val> if default should apply to 0 or "", ?? <val> if default only for undefined, etc
 
@@ -441,18 +563,17 @@ export default class MmuMixin extends Vue {
         return this.$vuetify?.theme?.currentTheme?.warning?.toString() ?? '#ff8300'
     }
 
-    get primaryTextColor(): string {
-        let splits = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(this.primaryColor)
-        if (splits) {
-            const r = parseInt(splits[1], 16) * 0.2126
-            const g = parseInt(splits[2], 16) * 0.7152
-            const b = parseInt(splits[3], 16) * 0.0722
-            const perceivedLightness = (r + g + b) / 255
+    // Example of themed styles
+    themeClass() {
+      return this.$vuetify.theme.dark ? 'dark-theme' : 'light-theme';
+    },
 
-            return perceivedLightness > 0.7 ? '#222' : '#fff'
-        }
-
-        return '#ffffff'
+    .v-data-table .v-data-table__wrapper table tbody tr.item-selected.light-theme {
+      background-color: #e0f7fa;
     }
-*/
+
+    .v-data-table .v-data-table__wrapper table tbody tr.item-selected.dark-theme {
+      background-color: #424242;
+    }
+PAUL ^^^ */
 }

@@ -215,7 +215,13 @@ export default class MmuPanel extends Mixins(BaseMixin, MmuMixin) {
         if (["complete", "error", "cancelled", "started"].includes(this.printState)) {
             posStr = this.capitalize(this.printState)
         } else if (this.action == "Idle") {
-            posStr = (this.filament !== "Unloaded") ? `Filament: ${this.filamentPosition}mm` : "Filament: Unloaded";
+            if (this.printState === "printing") {
+                posStr = `Printing (${this.numToolchanges}`
+                if (this.slicerToolMap.total_toolchanges) posStr += `/${this.slicerToolMap.total_toolchanges}`
+                posStr += " swaps)"
+             } else {
+                posStr = (this.filament !== "Unloaded") ? `Filament: ${this.filamentPosition}mm` : "Filament: Unloaded";
+            }
         } else if (this.action === "Loading" || this.action === "Unloading") {
             posStr = `${this.action}: ${this.filamentPosition}mm`
         } else {
@@ -231,7 +237,7 @@ export default class MmuPanel extends Mixins(BaseMixin, MmuMixin) {
 
     handleSyncSpoolman() {
         this.refreshSpoolmanData()
-        this.doLoadingSend('MMU_SPOOLMAN SYNC=1 QUIET=1', 'mmu_spoolman')
+        this.doLoadingSend('MMU_SPOOLMAN REFRESH=1 QUIET=1', 'mmu_spoolman')
     }
 
     mounted() {
